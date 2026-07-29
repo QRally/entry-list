@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rally Entry List</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap">
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #151c2c;
+      --border-color: #2a364f;
+      --accent-color: #e11d48;
+      --accent-hover: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --sponsor-color: #f59e0b;
+      --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: var(--bg-color); color: var(--text-main); font-family: var(--font-family); padding-bottom: 50px; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+    /* Header & Banner Upload */
+    .event-header { 
+      text-align: center; 
+      padding: 32px 16px 24px; 
+      background: linear-gradient(180deg, #1e293b 0%, #0b0f19 100%); 
+      border-bottom: 1px solid var(--border-color); 
+    }
+    .logo-container { position: relative; display: inline-block; max-width: 100%; margin-bottom: 16px; }
+    .logo-container img { max-height: 110px; width: auto; object-fit: contain; border-radius: 4px; }
+    
+    .upload-badge { margin-top: 10px; font-size: 0.75rem; }
+    .upload-badge label { 
+      cursor: pointer; 
+      color: var(--text-muted); 
+      background: rgba(255,255,255,0.06); 
+      padding: 6px 12px; 
+      border-radius: 20px; 
+      border: 1px dashed var(--border-color);
+      transition: all 0.2s ease;
+    }
+    .upload-badge label:hover { color: #fff; border-color: var(--accent-color); background: rgba(225,29,72,0.1); }
+    .upload-badge input { display: none; }
+
+    h1 { font-size: 1.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+    h2 { font-size: 1rem; color: var(--accent-color); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+    /* Control Bar Layout */
+    .controls { display: flex; gap: 12px; margin: 24px 0; flex-wrap: wrap; align-items: center; }
+    .controls input, .controls select { 
+      background: var(--card-bg); 
+      border: 1px solid var(--border-color); 
+      color: var(--text-main); 
+      padding: 10px 14px; 
+      border-radius: 6px; 
+      font-size: 0.95rem; 
+      outline: none; 
+      transition: border-color 0.2s;
+    }
+    .controls input { flex: 1; min-width: 240px; }
+    .controls input:focus, .controls select:focus { border-color: var(--accent-color); }
+    .stats-badge { 
+      margin-left: auto; 
+      background: var(--card-bg); 
+      padding: 10px 16px; 
+      border-radius: 6px; 
+      border: 1px solid var(--border-color); 
+      font-weight: 600; 
+      font-size: 0.85rem; 
+      color: var(--text-muted); 
+    }
+
+    /* Entry Table */
+    .table-wrapper { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { 
+      background: #0f172a; 
+      padding: 14px 16px; 
+      font-size: 0.75rem; 
+      text-transform: uppercase; 
+      letter-spacing: 1px; 
+      color: var(--text-muted); 
+      border-bottom: 1px solid var(--border-color); 
+    }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover { background: rgba(255,255,255,0.02); }
+
+    .col-no { width: 65px; font-weight: 800; color: var(--accent-color); font-size: 1.15rem; text-align: center; }
+    .driver-name { font-weight: 600; display: block; color: #fff; }
+    .codriver-name { font-size: 0.85rem; color: var(--text-muted); display: block; margin-top: 2px; }
+    .vehicle-name { font-weight: 600; color: #e2e8f0; }
+    .col-class { font-weight: 700; text-align: center; color: #cbd5e1; }
+    .col-cc { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+    .col-sponsor { color: var(--sponsor-color); font-style: italic; font-size: 0.85rem; }
+
+    /* Mobile Mobile Grid Adjustments */
+    @media (max-width: 720px) {
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .controls input {
+        grid-column: span 2;
+        width: 100%;
+      }
+      .controls select {
+        grid-column: span 1;
+        width: 100%;
+      }
+      .stats-badge {
+        grid-column: span 1;
+        margin-left: 0;
+        text-align: center;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      thead { display: none; }
+      table, tbody, tr, td { display: block; width: 100%; }
+      tr { margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-bg); padding: 12px 16px; }
+      td { padding: 4px 0; border: none; text-align: left !important; }
+      .col-no { font-size: 1.2rem; margin-bottom: 6px; display: inline-block; background: rgba(225,29,72,0.15); padding: 2px 10px; border-radius: 4px; }
+      .col-cc::before { content: "CC: "; color: var(--text-muted); }
+      .col-class::before { content: "Class: "; color: var(--text-muted); }
+      .col-sponsor::before { content: "Sponsor: "; color: var(--text-muted); font-style: normal; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="event-header">
+    <div class="logo-container">
+      <img id="eventLogo" src="" alt="Event Banner / Logo" style="display:none;">
+      <div class="upload-badge">
+        <label for="logoUpload">📷 Upload Header Image / Logo</label>
+        <input type="file" id="logoUpload" accept="image/*">
+      </div>
+    </div>
+    <h1 id="eventTitle">Event Organiser</h1>
+    <h2 id="eventSubtitle">List of Entries</h2>
+  </header>
+
+  <main class="container">
+    <section class="controls">
+      <input type="text" id="searchInput" placeholder="Search driver, co-driver, vehicle, class, or sponsor...">
+      <select id="classFilter">
+        <option value="ALL">All Classes</option>
+      </select>
+      <div class="stats-badge" id="entryCount">Entries: 0</div>
+    </section>
+
+    <div class="table-wrapper">
+      <table id="entryTable">
+        <thead>
+          <tr>
+            <th class="col-no">Car</th>
+            <th class="col-crew">Driver / Co-Driver</th>
+            <th class="col-vehicle">Vehicle</th>
+            <th class="col-cc" style="text-align: right;">CC</th>
+            <th class="col-class" style="text-align: center;">Class</th>
+            <th class="col-sponsor">Sponsor</th>
+          </tr>
+        </thead>
+        <tbody id="entryListBody">
+          <!-- Populated dynamically from entries.json -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    let entriesData = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchEntries();
+      setupImageUpload();
+
+      document.getElementById("searchInput").addEventListener("input", filterEntries);
+      document.getElementById("classFilter").addEventListener("change", filterEntries);
+    });
+
+    async function fetchEntries() {
+      try {
+        const res = await fetch("entries.json");
+        const data = await res.json();
+        
+        // Handle json with header metadata or direct array fallback
+        if (data.entries) {
+          entriesData = data.entries;
+          if (data.eventTitle) document.getElementById("eventTitle").textContent = data.eventTitle;
+          if (data.eventSubtitle) document.getElementById("eventSubtitle").textContent = data.eventSubtitle;
+        } else {
+          entriesData = data;
+        }
+
+        populateClassDropdown(entriesData);
+        renderTable(entriesData);
+      } catch (err) {
+        console.error("Error loading JSON entries:", err);
+      }
+    }
+
+    function populateClassDropdown(data) {
+      const select = document.getElementById("classFilter");
+      select.innerHTML = '<option value="ALL">All Classes</option>';
+      const classes = [...new Set(data.map(item => item.class))].sort((a,b) => a.localeCompare(b, undefined, {numeric: true}));
+      classes.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = `Class ${c}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById("entryListBody");
+      const countBadge = document.getElementById("entryCount");
+      tbody.innerHTML = "";
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">No entries found.</td></tr>`;
+        countBadge.textContent = "Entries: 0";
+        return;
+      }
+
+      data.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="col-no">${item.carNo}</td>
+          <td class="col-crew">
+            <span class="driver-name">${item.driver}</span>
+            <span class="codriver-name">/ ${item.coDriver}</span>
+          </td>
+          <td class="col-vehicle"><span class="vehicle-name">${item.vehicle}</span></td>
+          <td class="col-cc">${item.cc ? item.cc : '-'}</td>
+          <td class="col-class">${item.class}</td>
+          <td class="col-sponsor">${item.sponsor ? item.sponsor : '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      countBadge.textContent = `Entries: ${data.length}`;
+    }
+
+    function filterEntries() {
+      const query = document.getElementById("searchInput").value.toLowerCase().trim();
+      const selectedClass = document.getElementById("classFilter").value;
+
+      const filtered = entriesData.filter(item => {
+        const matchesSearch = 
+          item.driver.toLowerCase().includes(query) ||
+          item.coDriver.toLowerCase().includes(query) ||
+          item.vehicle.toLowerCase().includes(query) ||
+          (item.sponsor && item.sponsor.toLowerCase().includes(query)) ||
+          item.carNo.toString() === query;
+
+        const matchesClass = selectedClass === "ALL" || item.class.toString() === selectedClass;
+
+        return matchesSearch && matchesClass;
+      });
+
+      renderTable(filtered);
+    }
+
+    function setupImageUpload() {
+      const uploader = document.getElementById("logoUpload");
+      const logoImg = document.getElementById("eventLogo");
+
+      uploader.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            logoImg.src = event.target.result;
+            logoImg.style.display = "inline-block";
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
