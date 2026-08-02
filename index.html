@@ -26,7 +26,7 @@
     /* Event Header */
     .event-header { 
       text-align: center; 
-      padding: 36px 16px 28px; 
+      padding: 32px 16px 24px; 
       background: linear-gradient(180deg, #1e293b 0%, #0b0f19 100%); 
       border-bottom: 1px solid var(--border-color); 
     }
@@ -34,8 +34,38 @@
     h1 { font-size: 1.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
     h2 { font-size: 1rem; color: var(--accent-color); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; }
 
+    /* Segmented Toggle Bar */
+    .view-toggle {
+      display: flex;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 4px;
+      margin: 20px 0 16px 0;
+    }
+    .toggle-btn {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .toggle-btn.active {
+      background: var(--accent-color);
+      color: #ffffff;
+    }
+    .toggle-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
     /* Control Bar Layout */
-    .controls { display: flex; gap: 12px; margin: 24px 0; flex-wrap: wrap; align-items: center; }
+    .controls { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
     .controls input, .controls select { 
       background: var(--card-bg); 
       border: 1px solid var(--border-color); 
@@ -117,7 +147,6 @@
       .col-no { font-size: 1rem; margin-bottom: 8px; width: 100%; display: flex; justify-content: space-between; align-items: center; }
       .col-time { font-size: 1.15rem; margin-top: 6px; margin-bottom: 4px; }
       .col-time::before { content: "Total: "; color: var(--text-muted); font-size: 0.85rem; font-weight: 400; }
-      .col-cc::before { content: "CC: "; color: var(--text-muted); }
       .col-class::before { content: "Class: "; color: var(--text-muted); }
       .col-sponsor::before { content: "Sponsor: "; color: var(--text-muted); font-style: normal; }
     }
@@ -126,17 +155,23 @@
 <body>
 
   <header class="event-header">
-    <h1 id="eventTitle">Event Organiser</h1>
-    <h2 id="eventSubtitle">List of Entries</h2>
+    <h1 id="eventTitle">Your Motor Club Ltd</h1>
+    <h2 id="eventSubtitle">Tour of All Tours</h2>
   </header>
 
   <main class="container">
+    <!-- View Mode Toggle -->
+    <div class="view-toggle">
+      <button id="btnEntries" class="toggle-btn" onclick="switchMode('entries')">Entry List</button>
+      <button id="btnResults" class="toggle-btn" onclick="switchMode('results')">Final Results</button>
+    </div>
+
     <section class="controls">
       <input type="text" id="searchInput" placeholder="Search driver, co-driver, vehicle, class, or sponsor...">
       <select id="classFilter">
         <option value="ALL">All Classes</option>
       </select>
-      <div class="stats-badge" id="entryCount">Entries: 0</div>
+      <div class="stats-badge" id="entryCount">Total: 0</div>
     </section>
 
     <div class="table-wrapper">
@@ -146,7 +181,7 @@
             <th class="col-no">Car</th>
             <th class="col-crew">Driver / Co-Driver</th>
             <th class="col-vehicle">Vehicle</th>
-            <th class="col-time" style="text-align: right;">Total Time</th>
+            <th class="col-time" id="thTimeHeader" style="text-align: right;">Total Time</th>
             <th class="col-class" style="text-align: center;">Class</th>
             <th class="col-sponsor">Sponsor</th>
           </tr>
@@ -159,46 +194,120 @@
   </main>
 
   <script>
-    let entriesData = [];
+    let entriesList = [];
+    let resultsList = [];
+    let currentMode = 'results'; // Default view mode
 
     document.addEventListener("DOMContentLoaded", () => {
-      fetchEntries();
+      loadAllData();
 
-      document.getElementById("searchInput").addEventListener("input", filterEntries);
-      document.getElementById("classFilter").addEventListener("change", filterEntries);
+      document.getElementById("searchInput").addEventListener("input", filterAndRender);
+      document.getElementById("classFilter").addEventListener("change", filterAndRender);
     });
 
-    async function fetchEntries() {
-      try {
-        // Cache-busting URL parameter forces fresh fetch every time
-        const res = await fetch("entries.json?v=" + new Date().getTime());
-        const data = await res.json();
-        
-        if (data.entries) {
-          entriesData = data.entries;
-          if (data.eventTitle) document.getElementById("eventTitle").textContent = data.eventTitle;
-          if (data.eventSubtitle) document.getElementById("eventSubtitle").textContent = data.eventSubtitle;
-        } else {
-          entriesData = data;
-        }
+    async function loadAllData() {
+      const cacheBust = "?v=" + new Date().getTime();
 
-        populateClassDropdown(entriesData);
-        renderTable(entriesData);
-      } catch (err) {
-        console.error("Error loading JSON entries:", err);
+      // Fetch entries.json
+      try {
+        const resEntries = await fetch("entries.json" + cacheBust);
+        const dataEntries = await resEntries.json();
+        entriesList = dataEntries.entries || dataEntries;
+        if (dataEntries.eventTitle) document.getElementById("eventTitle").textContent = dataEntries.eventTitle;
+        if (dataEntries.eventSubtitle) document.getElementById("eventSubtitle").textContent = dataEntries.eventSubtitle;
+      } catch (e) {
+        console.warn("Could not load entries.json", e);
+      }
+
+      // Fetch results.json
+      try {
+        const resResults = await fetch("results.json" + cacheBust);
+        if (resResults.ok) {
+          const dataResults = await resResults.json();
+          resultsList = dataResults.entries || dataResults;
+        }
+      } catch (e) {
+        console.warn("results.json not found or invalid.");
+      }
+
+      // Decide initial mode based on available data
+      if (resultsList.length > 0) {
+        currentMode = 'results';
+      } else {
+        currentMode = 'entries';
+        document.getElementById("btnResults").disabled = true;
+        document.getElementById("btnResults").textContent = "Results (Pending)";
+      }
+
+      updateToggleUI();
+      populateClassDropdown();
+      filterAndRender();
+    }
+
+    function switchMode(mode) {
+      if (mode === 'results' && resultsList.length === 0) return;
+      currentMode = mode;
+      updateToggleUI();
+      populateClassDropdown();
+      filterAndRender();
+    }
+
+    function updateToggleUI() {
+      document.getElementById("btnEntries").classList.toggle("active", currentMode === 'entries');
+      document.getElementById("btnResults").classList.toggle("active", currentMode === 'results');
+      
+      // Update Subtitle dynamically based on active tab
+      const subtitle = document.getElementById("eventSubtitle");
+      if (currentMode === 'results') {
+        subtitle.textContent = subtitle.textContent.replace(" — Entry List", "") + " — Final Results";
+      } else {
+        subtitle.textContent = subtitle.textContent.replace(" — Final Results", "") + " — Entry List";
       }
     }
 
-    function populateClassDropdown(data) {
+    function populateClassDropdown() {
+      const dataset = currentMode === 'results' ? resultsList : entriesList;
       const select = document.getElementById("classFilter");
+      const activeValue = select.value;
+      
       select.innerHTML = '<option value="ALL">All Classes</option>';
-      const classes = [...new Set(data.map(item => item.class))].sort((a,b) => a.localeCompare(b, undefined, {numeric: true}));
+      const classes = [...new Set(dataset.map(item => item.class))].sort((a,b) => a.localeCompare(b, undefined, {numeric: true}));
+      
       classes.forEach(c => {
         const opt = document.createElement("option");
         opt.value = c;
         opt.textContent = `Class ${c}`;
+        if (c === activeValue) opt.selected = true;
         select.appendChild(opt);
       });
+    }
+
+    function filterAndRender() {
+      const query = document.getElementById("searchInput").value.toLowerCase().trim();
+      const selectedClass = document.getElementById("classFilter").value;
+      const dataset = currentMode === 'results' ? resultsList : entriesList;
+
+      // Filter dataset
+      const filtered = dataset.filter(item => {
+        const matchesSearch = 
+          item.driver.toLowerCase().includes(query) ||
+          item.coDriver.toLowerCase().includes(query) ||
+          item.vehicle.toLowerCase().includes(query) ||
+          (item.sponsor && item.sponsor.toLowerCase().includes(query)) ||
+          item.carNo.toString() === query;
+
+        const matchesClass = selectedClass === "ALL" || item.class.toString() === selectedClass;
+
+        return matchesSearch && matchesClass;
+      });
+
+      // Sort: Positional for results, Car # for entries
+      const sorted = [...filtered].sort((a, b) => {
+        if (currentMode === 'results' && a.pos && b.pos) return a.pos - b.pos;
+        return a.carNo - b.carNo;
+      });
+
+      renderTable(sorted);
     }
 
     function renderTable(data) {
@@ -208,25 +317,16 @@
 
       if (data.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">No records found.</td></tr>`;
-        countBadge.textContent = "Entries: 0";
+        countBadge.textContent = "Total: 0";
         return;
       }
 
-      // Check if dataset contains results mode data
-      const isResultsMode = data.some(item => item.pos !== undefined || item.totalTime);
-
-      // Auto-sort by Position (if results mode) or Car Number (if entry mode)
-      const sortedData = [...data].sort((a, b) => {
-        if (isResultsMode && a.pos && b.pos) return a.pos - b.pos;
-        return a.carNo - b.carNo;
-      });
-
-      sortedData.forEach(item => {
+      data.forEach(item => {
         const tr = document.createElement("tr");
 
-        const posTag = item.pos ? `<span class="pos-badge">#${item.pos}</span>` : '';
+        const posTag = (currentMode === 'results' && item.pos) ? `<span class="pos-badge">#${item.pos}</span>` : '';
         const carNoTag = `Car ${item.carNo}`;
-        const timeDisplay = item.totalTime ? item.totalTime : '-';
+        const timeDisplay = (currentMode === 'results' && item.totalTime) ? item.totalTime : '-';
 
         tr.innerHTML = `
           <td class="col-no">${posTag} ${carNoTag}</td>
@@ -243,26 +343,6 @@
       });
 
       countBadge.textContent = `Total: ${data.length}`;
-    }
-
-    function filterEntries() {
-      const query = document.getElementById("searchInput").value.toLowerCase().trim();
-      const selectedClass = document.getElementById("classFilter").value;
-
-      const filtered = entriesData.filter(item => {
-        const matchesSearch = 
-          item.driver.toLowerCase().includes(query) ||
-          item.coDriver.toLowerCase().includes(query) ||
-          item.vehicle.toLowerCase().includes(query) ||
-          (item.sponsor && item.sponsor.toLowerCase().includes(query)) ||
-          item.carNo.toString() === query;
-
-        const matchesClass = selectedClass === "ALL" || item.class.toString() === selectedClass;
-
-        return matchesSearch && matchesClass;
-      });
-
-      renderTable(filtered);
     }
   </script>
 </body>
