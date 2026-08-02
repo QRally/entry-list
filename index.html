@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rally Entry List</title>
+  <title>Rally Hub — Entries & Results</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap">
   <style>
     :root {
@@ -11,10 +11,10 @@
       --card-bg: #151c2c;
       --border-color: #2a364f;
       --accent-color: #e11d48;
-      --accent-hover: #f43f5e;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --sponsor-color: #f59e0b;
+      --time-color: #10b981;
       --font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
 
@@ -75,12 +75,13 @@
     tr:last-child td { border-bottom: none; }
     tr:hover { background: rgba(255,255,255,0.02); }
 
-    .col-no { width: 65px; font-weight: 800; color: var(--accent-color); font-size: 1.15rem; text-align: center; }
+    .col-no { width: 110px; font-weight: 800; color: var(--accent-color); font-size: 1rem; }
+    .pos-badge { background: var(--accent-color); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; margin-right: 6px; }
     .driver-name { font-weight: 600; display: block; color: #fff; }
     .codriver-name { font-size: 0.85rem; color: var(--text-muted); display: block; margin-top: 2px; }
     .vehicle-name { font-weight: 600; color: #e2e8f0; }
     .col-class { font-weight: 700; text-align: center; color: #cbd5e1; }
-    .col-cc { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+    .col-time { font-family: monospace; font-size: 1.05rem; font-weight: 700; color: var(--time-color); text-align: right; }
     .col-sponsor { color: var(--sponsor-color); font-style: italic; font-size: 0.85rem; }
 
     /* Mobile Responsive Card Layout */
@@ -112,7 +113,10 @@
       table, tbody, tr, td { display: block; width: 100%; }
       tr { margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-bg); padding: 12px 16px; }
       td { padding: 4px 0; border: none; text-align: left !important; }
-      .col-no { font-size: 1.2rem; margin-bottom: 6px; display: inline-block; background: rgba(225,29,72,0.15); padding: 2px 10px; border-radius: 4px; }
+      
+      .col-no { font-size: 1rem; margin-bottom: 8px; width: 100%; display: flex; justify-content: space-between; align-items: center; }
+      .col-time { font-size: 1.15rem; margin-top: 6px; margin-bottom: 4px; }
+      .col-time::before { content: "Total: "; color: var(--text-muted); font-size: 0.85rem; font-weight: 400; }
       .col-cc::before { content: "CC: "; color: var(--text-muted); }
       .col-class::before { content: "Class: "; color: var(--text-muted); }
       .col-sponsor::before { content: "Sponsor: "; color: var(--text-muted); font-style: normal; }
@@ -138,17 +142,17 @@
     <div class="table-wrapper">
       <table id="entryTable">
         <thead>
-          <tr>
+          <tr id="tableHeader">
             <th class="col-no">Car</th>
             <th class="col-crew">Driver / Co-Driver</th>
             <th class="col-vehicle">Vehicle</th>
-            <th class="col-cc" style="text-align: right;">CC</th>
+            <th class="col-time" style="text-align: right;">Total Time</th>
             <th class="col-class" style="text-align: center;">Class</th>
             <th class="col-sponsor">Sponsor</th>
           </tr>
         </thead>
         <tbody id="entryListBody">
-          <!-- Populated dynamically from entries.json -->
+          <!-- Populated dynamically -->
         </tbody>
       </table>
     </div>
@@ -166,7 +170,8 @@
 
     async function fetchEntries() {
       try {
-        const res = await fetch("entries.json");
+        // Cache-busting URL parameter forces fresh fetch every time
+        const res = await fetch("entries.json?v=" + new Date().getTime());
         const data = await res.json();
         
         if (data.entries) {
@@ -202,28 +207,42 @@
       tbody.innerHTML = "";
 
       if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">No entries found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">No records found.</td></tr>`;
         countBadge.textContent = "Entries: 0";
         return;
       }
 
-      data.forEach(item => {
+      // Check if dataset contains results mode data
+      const isResultsMode = data.some(item => item.pos !== undefined || item.totalTime);
+
+      // Auto-sort by Position (if results mode) or Car Number (if entry mode)
+      const sortedData = [...data].sort((a, b) => {
+        if (isResultsMode && a.pos && b.pos) return a.pos - b.pos;
+        return a.carNo - b.carNo;
+      });
+
+      sortedData.forEach(item => {
         const tr = document.createElement("tr");
+
+        const posTag = item.pos ? `<span class="pos-badge">#${item.pos}</span>` : '';
+        const carNoTag = `Car ${item.carNo}`;
+        const timeDisplay = item.totalTime ? item.totalTime : '-';
+
         tr.innerHTML = `
-          <td class="col-no">${item.carNo}</td>
+          <td class="col-no">${posTag} ${carNoTag}</td>
           <td class="col-crew">
             <span class="driver-name">${item.driver}</span>
             <span class="codriver-name">/ ${item.coDriver}</span>
           </td>
           <td class="col-vehicle"><span class="vehicle-name">${item.vehicle}</span></td>
-          <td class="col-cc">${item.cc ? item.cc : '-'}</td>
+          <td class="col-time">${timeDisplay}</td>
           <td class="col-class">${item.class}</td>
           <td class="col-sponsor">${item.sponsor ? item.sponsor : '-'}</td>
         `;
         tbody.appendChild(tr);
       });
 
-      countBadge.textContent = `Entries: ${data.length}`;
+      countBadge.textContent = `Total: ${data.length}`;
     }
 
     function filterEntries() {
